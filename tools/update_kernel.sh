@@ -109,7 +109,7 @@ get_device () {
 			scan_armv7_kernels
 			es8="enabled"
 			;;
-		TI_AM5728_BeagleBoard-X15)
+		TI_AM5728_BeagleBoard*)
 			scan_ti_kernels
 			scan_armv7_kernels
 			;;
@@ -139,7 +139,7 @@ get_device () {
 		sgxti335x="enabled"
 		rtl8723bu="enabled"
 		;;
-	TI_AM5728_BeagleBoard-X15)
+	TI_AM5728_BeagleBoard*)
 		sgxjacinto6evm="enabled"
 		kernel_headers="enabled"
 		;;
@@ -222,6 +222,9 @@ latest_version_repo () {
 				apt-get install -y ${pkg}
 				update_uEnv_txt
 			elif [ "x${pkg}" = "x${apt_cache}" ] ; then
+				if [ "x${kernel_headers}" = "xenabled" ] ; then
+					pkg="${pkg} linux-headers-${latest_kernel}"
+				fi
 				echo "debug: reinstalling: [${pkg}]"
 				apt-get install -y ${pkg} --reinstall
 				update_uEnv_txt
@@ -390,7 +393,15 @@ third_party () {
 		;;
 	ti|ti-rt)
 		case "${kernel}" in
-		LTS41)
+		LTS314)
+			apt-get install -y mt7601u-modules-${latest_kernel} || true
+			run_depmod_initramfs="enabled"
+			if [ "x${rtl8723bu}" = "xenabled" ] ; then
+				apt-get install -y rtl8723bu-modules-${latest_kernel} || true
+				run_depmod_initramfs="enabled"
+			fi
+			;;
+		LTS41|LTS44)
 			if [ "x${rtl8723bu}" = "xenabled" ] ; then
 				apt-get install -y rtl8723bu-modules-${latest_kernel} || true
 				run_depmod_initramfs="enabled"
@@ -401,12 +412,6 @@ third_party () {
 			fi
 			if [ "x${sgxjacinto6evm}" = "xenabled" ] ; then
 				apt-get install -y ti-sgx-jacinto6evm-modules-${latest_kernel} || true
-				run_depmod_initramfs="enabled"
-			fi
-			;;
-		LTS44)
-			if [ "x${rtl8723bu}" = "xenabled" ] ; then
-				apt-get install -y rtl8723bu-modules-${latest_kernel} || true
 				run_depmod_initramfs="enabled"
 			fi
 			;;
@@ -429,7 +434,7 @@ case "${get_dist}" in
 wheezy|jessie|stretch|sid)
 	dist="${get_dist}"
 	;;
-trusty|utopic|vivid|wily|xenial)
+trusty|utopic|vivid|wily|xenial|yakkety)
 	dist="${get_dist}"
 	;;
 *)
@@ -477,6 +482,9 @@ while [ ! -z "$1" ] ; do
 		;;
 	--daily-cron)
 		daily_cron="enabled"
+		;;
+	--lts-3_14-kernel|--lts-3_14)
+		kernel="LTS314"
 		;;
 	--lts-kernel|--lts|--lts-4_1-kernel|--lts-4_1)
 		kernel="LTS41"
